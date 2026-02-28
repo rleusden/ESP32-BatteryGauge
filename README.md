@@ -45,7 +45,7 @@ The web UI polls `/json` and shows:
 
 ## Clean structure
 
-- `LTC2944_ESP32_AP_V2.ino` – main sketch (setup/loop glue)
+- `ESP32_BatteryGauge.ino` – main sketch (setup/loop glue)
 - `html.*` – the single-page dashboard (old Android compatible)
 - `WifiScan.*` – scan + choose best channel (with Serial logging)
 - `DataProcessing.*` – DEMO generator + UART parsing + CRC helpers
