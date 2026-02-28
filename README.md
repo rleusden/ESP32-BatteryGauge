@@ -1,4 +1,7 @@
 # ESP32 BatteryGauge (Legacy Tablet Edition)
+![ESP32](https://img.shields.io/badge/ESP32-AP--Mode-blue)
+![Android 4.x Compatible](https://img.shields.io/badge/Android-4.x%20Compatible-green)
+![Legacy Hardware Friendly](https://img.shields.io/badge/Legacy%20Hardware-Yes-success)
 
 Give discarded hardware a second life ⚡📟
 
@@ -76,6 +79,52 @@ Typical setup:
    `http://192.168.4.1`
 
 You should see the dashboard updating in real-time.
+
+---
+
+🖥 Console Output Example
+
+Below is an example of the ESP32 boot log with auto channel scan enabled.
+
+Boot...
+
+=== WIFI SCAN START ===
+
+Networks found: 11
+
+| SSID              | Channel | RSSI (dBm) | Weight |
+| ----------------- | ------- | ---------- | ------ |
+| Network_01        | 1       | -92        | 8      |
+| Hidden_Network_01 | 8       | -92        | 8      |
+| Hidden_Network_02 | 8       | -93        | 7      |
+| Network_02        | 8       | -93        | 7      |
+| Hidden_Network_03 | 8       | -93        | 7      |
+| Hidden_Network_04 | 1       | -94        | 6      |
+| Network_02        | 8       | -94        | 6      |
+| Network_03        | 13      | -94        | 6      |
+| Hidden_Network_05 | 13      | -95        | 5      |
+| Network_04        | 11      | -96        | 4      |
+| Hidden_Network_06 | 13      | -96        | 4      |
+
+Channel scores (lower is better):
+
+| Parameter        | Value        |
+| ---------------- | ------------ |
+| Selected Channel | 6            |
+| AP SSID          | BatteryGauge |
+| AP IP            | 192.168.4.1  |
+| Mode             | DEMO_MODE    |
+
+=== WIFI SCAN END ===
+
+Explanation:
+
+The ESP32 scans nearby 2.4 GHz networks at boot.
+Only non-overlapping channels 1 / 6 / 11 are considered.
+A weighted score is calculated based on RSSI.
+(Weighted Score = Σ (100 + RSSI_dBm))
+The channel with the lowest congestion score is selected.
+The ESP32 then starts its own Access Point on that channel.
 
 ---
 
