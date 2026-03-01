@@ -5,8 +5,9 @@
 
 Give discarded hardware a second life ⚡📟
 
+![BatteryGauge on lab bench](images/batterygauge_lab.png)
+
 This project turns an ESP32 into a standalone Wi-Fi access point that hosts a super-simple battery dashboard, compatible with **very old Android browsers** (tested on Android 4.1.1).  
-The electronics can live in a waterproof box near the battery, while the display (an old tablet) stays safe and dry.
 
 The web UI polls `/json` and shows:
 - SOC with a bar (**green when charging, red when discharging**)
@@ -158,7 +159,7 @@ SOC=72,Vpack=11480,I=-1230,T=235,AL=0
 
 ## What can you build?
 
-- Battery gauge for a 3S Li-ion pack
+- Battery gauge for a Li-ion pack, up to 60V with LTC2944
 - Power bank display (tablet UI)
 - Remote “dry” display for a waterproof battery box
 - SOC dashboard for LTC2944 / INA219 / shunt-based systems
