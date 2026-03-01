@@ -3,11 +3,17 @@
 ![Android 4.x Compatible](https://img.shields.io/badge/Android-4.x%20Compatible-green)
 ![Legacy Hardware Friendly](https://img.shields.io/badge/Legacy%20Hardware-Yes-success)
 
+This project turns an ESP32 into a standalone Wi-Fi access point that hosts a super-simple battery dashboard, compatible with **very old Android browsers** (tested on Android 4.1.1).  
 Give discarded hardware a second life ⚡📟
 
 ![BatteryGauge on lab bench](images/batterygauge_lab.png)
 
-This project turns an ESP32 into a standalone Wi-Fi access point that hosts a super-simple battery dashboard, compatible with **very old Android browsers** (tested on Android 4.1.1).  
+### UI states (tablet frame)
+
+<p float="left">
+  <img src="images/tablet_BatteryGauge_discharging.png" width="49%" />
+  <img src="images/tablet_BatteryGauge_charging.png" width="49%" />
+</p>
 
 The web UI polls `/json` and shows:
 - SOC with a bar (**green when charging, red when discharging**)
