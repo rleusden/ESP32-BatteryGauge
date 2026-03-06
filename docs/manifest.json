@@ -1,0 +1,13 @@
+{
+  "name": "ESP32 BatteryGauge",
+  "version": "1.0",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32",
+      "parts": [
+        { "path": "./ESP32-BatteryGauge.ino.merged.bin", "offset": 0 }
+      ]
+    }
+  ]
+}
