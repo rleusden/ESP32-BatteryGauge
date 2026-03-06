@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ESP32 BatteryGauge Installer</title>
+  <script
+    type="module"
+    src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module">
+  </script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 760px;
+      margin: 40px auto;
+      padding: 0 16px;
+      line-height: 1.5;
+    }
+    .card {
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 20px;
+    }
+    h1 { margin-top: 0; }
+    code { background: #f3f3f3; padding: 2px 6px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>ESP32 BatteryGauge</h1>
+    <p>Web installer for the legacy v1.0 firmware.</p>
+
+    <p>
+      Use a USB data cable and a Chromium-based browser on desktop
+      (for example Chrome or Edge).
+    </p>
+
+    <esp-web-install-button manifest="./manifest.json">
+      <button slot="activate">Install firmware</button>
+    </esp-web-install-button>
+
+    <h2>Notes</h2>
+    <ul>
+      <li>Board: ESP32</li>
+      <li>Firmware: v1.0 Legacy BatteryGauge</li>
+      <li>After flashing, connect to the AP and open <code>http://192.168.4.1</code></li>
+    </ul>
+  </div>
+</body>
+</html>
