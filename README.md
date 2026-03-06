@@ -2,6 +2,8 @@
 ![ESP32](https://img.shields.io/badge/ESP32-AP--Mode-blue)
 ![Android 4.x Compatible](https://img.shields.io/badge/Android-4.x%20Compatible-green)
 ![Legacy Hardware Friendly](https://img.shields.io/badge/Legacy%20Hardware-Yes-success)
+[![Firmware v1.0](https://img.shields.io/badge/Firmware-v1.0-blue)](https://github.com/rleusden/ESP32-BatteryGauge/releases/tag/v1.0)
+[![Web Installer](https://img.shields.io/badge/Web-Installer-green)](https://rleusden.github.io/ESP32-BatteryGauge/)
 
 This project turns an ESP32 into a standalone Wi-Fi access point that hosts a super-simple battery dashboard, compatible with **very old Android browsers** (tested on Android 4.1.1).  
 Give discarded hardware a second life ⚡📟
