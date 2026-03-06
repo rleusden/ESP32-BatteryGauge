@@ -1,4 +1,5 @@
 # ESP32 BatteryGauge (Legacy Tablet Edition)
+
 ![ESP32](https://img.shields.io/badge/ESP32-AP--Mode-blue)
 ![Android 4.x Compatible](https://img.shields.io/badge/Android-4.x%20Compatible-green)
 ![Legacy Hardware Friendly](https://img.shields.io/badge/Legacy%20Hardware-Yes-success)
@@ -24,7 +25,42 @@ The web UI polls `/json` and shows:
 - Stale / No-data handling (after 60s -> blanks to `--`)
 
 ---
+## System overview
 
+```text
+┌─────────────────────┐
+│   Battery Pack      │
+└─────────┬───────────┘
+          │
+          ▼
+┌─────────────────────┐
+│ LTC2944 Fuel Gauge  │
+│ + local controller  │
+└─────────┬───────────┘
+          │ UART / data
+          ▼
+┌─────────────────────┐
+│ ESP32               │
+│ - Access Point      │
+│ - Web server        │
+│ - JSON endpoint     │
+└─────────┬───────────┘
+          │ WiFi
+          ▼
+┌─────────────────────┐
+│ Old Android Tablet  │
+│ Browser opens       │
+│ http://192.168.4.1  │
+└─────────┬───────────┘
+          ▼
+┌─────────────────────┐
+│ Battery Dashboard   │
+│ - SOC               │
+│ - Voltage           │
+│ - Current           │
+│ - Temperature       │
+└─────────────────────┘
+```
 ## ✨ Features
 
 - **Android 4.1.1 friendly UI**
@@ -81,9 +117,8 @@ Typical setup:
 ## Quick Start
 
 1. Flash the ESP32
-2. Power the ESP32
-3. Connect the tablet to Wi-Fi SSID: `BatteryGauge`
-4. Open:
+2. Connect the tablet to Wi-Fi SSID: `BatteryGauge`
+3. Open:
 
    `http://192.168.4.1`
 
