@@ -67,13 +67,13 @@ This design keeps the safety-critical battery logic inside the BMS while giving 
 
 ### 1. One active profile per firmware build
 
-Although multiple profiles are supported by the codebase, only **one profile is active in a given firmware build**.
+Although the codebase supports multiple profiles, only one profile is active in a given firmware build.
 
 This means:
 
-- profile selection happens at compile time
-- runtime logic stays simple
-- no dynamic profile switching is needed in the field
+- Profile selection happens at compile time
+- Runtime logic stays simple
+- No dynamic profile switching is needed in the field
 
 This is implemented through:
 
@@ -88,7 +88,7 @@ This is implemented through:
 
 The architecture is split into clear layers:
 
-Sensors / mock
+Measurement layer
 ↓
 State
 ↓
@@ -104,6 +104,42 @@ Each layer has a focused responsibility.
 ---
 
 ## Core Building Blocks
+
+### Measurement Layer
+
+The measurement layer provides raw battery data to the runtime system.
+
+During early development, this layer was implemented using mock sensors in the ESP32.  
+In the hardware configuration, the measurement layer is implemented with a dedicated sensor node.
+
+Typical hardware chain:
+
+Battery pack  
+↓  
+LTC2944 current/voltage monitor  
+↓  
+Arduino Pro Mini (sensor node)  
+↓  
+Serial telemetry  
+↓  
+ESP32 runtime core  
+
+The sensor node is responsible for:
+
+- communicating with the LTC2944 via I²C
+- reading voltage, current, and coulomb counter registers
+- performing basic measurement validation
+- periodically sending telemetry to the ESP32
+
+The ESP32 remains responsible for all higher-level logic.
+
+Separating measurement from the ESP32 runtime has several advantages:
+
+- Measurement timing is independent of WiFi or UI activity
+- Sensor hardware can evolve without changing runtime logic
+- The system can support different measurement modules in the future
+
+Within the firmware architecture, the measurement layer simply updates the shared `State` structure.
 
 ### State
 
