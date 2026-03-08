@@ -12,7 +12,9 @@ Profiles allow the system to present the **right information for the situation**
 
 # Why Profiles Exist
 
-Many battery monitors expose raw telemetry:
+<table>
+<tr>
+<td width="50%" valign="top">
 
 - Voltage
 - Current
@@ -20,8 +22,17 @@ Many battery monitors expose raw telemetry:
 - Battery Temperature
 - State of charge
 - Charge cycles
-- Cel voltages
+- Cell voltages
 - Internal resistance
+
+</td>
+<td width="50%" align="center">
+
+![Monitor Madness](/images/monitor_madness.png)
+
+</td>
+</tr>
+</table>
 
 This information can be useful for engineers.
 
