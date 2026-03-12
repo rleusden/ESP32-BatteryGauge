@@ -33,25 +33,19 @@ This architecture separates **low-level battery sensing** from **application and
 
 The system consists of three logical layers.
 
-```text
-Battery
-   │
-   │
-Shunt resistor + LTC2944
-   │
-   │ I²C
-   │
-Arduino Pro Mini
-   │
-   │ Serial communication
-   │
-ESP32 BatteryGauge
-   │
-   │ WiFi
-   │
-Tablet / Web UI
-```
+```mermaid
+flowchart TD
+    B[Battery]
+    S[Shunt Resistor + LTC2944]
+    P[Arduino Pro Mini<br/>Battery Sensor Node]
+    E[ESP32 BatteryGauge<br/>UI and Connectivity Layer]
+    T[Tablet / Web UI]
 
+    B --> S
+    S -->|I²C| P
+    P -->|UART| E
+    E -->|WiFi| T
+```
 ### Responsibilities per layer
 
 | Component | Responsibility |
