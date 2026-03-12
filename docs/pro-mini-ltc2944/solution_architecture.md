@@ -37,7 +37,7 @@ The system consists of three logical layers.
 flowchart TD
     B[Battery]
     S[Shunt Resistor + LTC2944]
-    P[Arduino Pro Mini<br/>Battery Sensor Node]
+    P[Arduino Pro Mini<br/>Battery Sensor + Validation Node]
     E[ESP32 BatteryGauge<br/>UI and Connectivity Layer]
     T[Tablet / Web UI]
 
@@ -66,7 +66,7 @@ The LTC2944 provides **raw electrical measurements**, but integrating the sensor
 - error handling becomes complex  
 - sensor faults propagate into the UI layer  
 
-The Pro Mini bridge solves this by acting as a **dedicated sensor node**.
+The Pro Mini bridge solves this by acting as a dedicated sensor node and hardware validation layer.
 
 Benefits:
 
@@ -88,6 +88,7 @@ The Pro Mini firmware is responsible for:
 - estimating SOC
 - performing calibration
 - detecting invalid hardware configuration
+- validating battery configuration and measured voltage plausibility
 - producing normalized telemetry for the ESP32
 
 The firmware is **not responsible for**:
@@ -177,7 +178,7 @@ Four input pins define the battery voltage class.
 
 ### Lithium batteries
 
-Lithium batteries are configured using **series cell counts (S)**.
+Lithium batteries are configured using the number of series cells (S).
 
 | Class | Battery |
 |------|--------|
@@ -194,7 +195,7 @@ Lithium batteries are configured using **series cell counts (S)**.
 
 ### Lead batteries
 
-Lead-acid batteries are configured using nominal system voltage.
+Lead-acid batteries are configured based on the nominal system voltage.
 
 | Class | Battery |
 |------|---------|
@@ -213,6 +214,50 @@ If the combination of chemistry and class is unsupported:
 3. Normal telemetry output is disabled.
 
 This prevents the ESP32 application from receiving invalid measurement data.
+
+---
+
+## Voltage Plausibility Check
+
+A valid hardware configuration does not guarantee that the correct battery is connected.
+
+For example:
+
+- a **1S battery connected while 3S Li-ion is configured**
+- a **severely discharged battery outside the plausible voltage range**
+- an incorrect installation
+
+To detect this situation, the Pro Mini performs a **startup voltage plausibility check**.
+
+The measured pack voltage is compared against the expected voltage range of the selected battery profile.
+
+If the measured voltage falls outside the plausible range:
+
+1. A diagnostic message is printed to the serial port.
+2. The system enters **fault mode**.
+3. The LED indicates an error using the **SOS pattern**.
+
+**Normal telemetry output is disabled to prevent the ESP32 from processing invalid battery data.**
+
+---
+## Override Mode
+
+A dedicated **override jumper** allows installers to bypass the startup voltage plausibility check.
+
+This is intended for edge cases such as:
+
+- aged batteries
+- weak batteries
+- laboratory testing
+- partially discharged packs during service
+
+When override is enabled:
+
+- the Pro Mini continues normal telemetry output
+- a **profile mismatch alarm bit** is set in telemetry
+- the ESP32 UI can inform the user that the measured battery does not match the configured profile
+
+**Override mode should only be used intentionally and is not recommended for normal operation.**
 
 ---
 
@@ -255,7 +300,7 @@ Because the Pro Mini lacks a display, the onboard LED indicates the system state
 |----------|---------|
 | OFF | Normal operation |
 | ON | Calibration active |
-| SOS blink | Configuration error |
+| SOS blink | Configuration error or startup validation error |
 
 This provides immediate visual feedback to installers.
 
@@ -277,6 +322,16 @@ If the LTC2944 read fails:
 
 - an alarm flag is set
 - a telemetry frame is still transmitted
+
+### Battery profile mismatch
+
+If the measured battery voltage does not match the configured battery profile:
+
+- a profile mismatch alarm flag is set
+- the condition is reported to the ESP32
+- the ESP32 UI can present a diagnostic warning to the user
+
+If override mode is disabled, the system enters fault mode during startup.
 
 ### Measurement limits
 
