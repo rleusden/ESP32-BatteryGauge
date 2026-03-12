@@ -21,7 +21,7 @@ The architecture separates **measurement, estimation, session logic and UI**, al
 ## Why BatteryGauge?
 
 Modern batteries often include a **Battery Management System (BMS)**.  
-However, in many real-world installations this still leaves a gap between the battery electronics and the actual user.
+However, in many real-world installations, this still leaves a gap between the battery electronics and the actual user.
 
 Typical limitations of built-in BMS systems include:
 
