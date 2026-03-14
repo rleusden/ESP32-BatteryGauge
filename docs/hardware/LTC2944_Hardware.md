@@ -192,7 +192,7 @@ Typical connections:
 |SCL	|Pro Mini A5|
 |GND	|Common ground|
 |VCC |3V3|
-|ALCC|Alarm Output|
+|ALCC|NC|
 
 Several PCB layout strategies were used to improve measurement accuracy and reliability.
 
