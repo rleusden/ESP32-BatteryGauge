@@ -19,9 +19,7 @@ These measurements are processed by the **Pro Mini bridge firmware**, which conv
 
 ## Hardware Photo
 
-*(Insert photo of the LTC2944 PCB here)*
-
-![LTC2944 PCB](../images/ltc2944_pcb_placeholder.jpg)
+![LTC2944 PCB](/images/ltc2944_pcb.png)
 
 ---
 
@@ -69,7 +67,7 @@ The LTC2944 integrates most measurement functions into a single device, signific
 
 ## LTC2944 Overview
 
-The LTC2944 is a battery monitoring IC designed for high-side current sensing and battery telemetry applications.
+The LTC2944 is a battery-monitoring IC designed for high-side current sensing and battery-telemetry applications.
 
 Key capabilities used in this design:
 
@@ -80,7 +78,7 @@ Key capabilities used in this design:
 - internal temperature sensor
 - I²C interface
 
-In this system the device operates in automatic measurement mode, continuously updating measurement registers.
+In this system, the device operates in automatic measurement mode, continuously updating measurement registers.
 
 ## Electrical Measurement Chain
 
@@ -178,7 +176,7 @@ Typical configuration:
 |Terminal	|Function|
 |-----------|---------------|
 |B+	|Battery positive|
-|B−	|Battery negative|
+|C/L|Charger / Load|
 
 These terminals support M6 bolt connections and are sized for high current applications.
 
@@ -193,15 +191,15 @@ Typical connections:
 |SDA	|Pro Mini A4|
 |SCL	|Pro Mini A5|
 |GND	|Common ground|
-|VCC |Measurement reference|
-|PCB |Layout Considerations|
+|VCC |3V3|
+|ALCC|Alarm Output|
 
 Several PCB layout strategies were used to improve measurement accuracy and reliability.
 
 ## Kelvin Shunt Connections
 
-The LTC2944 measures shunt voltage using Kelvin sense connections.
-This minimizes measurement error caused by copper trace resistance.
+The LTC2944 measures shunt voltage using a 1% tolerance sense resistor with Kelvin sense connections.
+This minimizes measurement error.
 
 ## High Current Path
 
