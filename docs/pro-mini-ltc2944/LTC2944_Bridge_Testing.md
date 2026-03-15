@@ -111,6 +111,60 @@ The measured pack voltage is compared against the expected voltage range of the 
 
 ---
 
+## Battery Voltage Plausibility Table
+
+The bridge performs a **startup plausibility check** to detect incorrect battery connections.
+
+The measured pack voltage is compared against the plausible voltage range of the selected battery profile.
+
+If the measured voltage falls outside the plausible range:
+
+- the system enters fault mode
+- telemetry output is disabled
+- the status LED emits the SOS pattern
+
+---
+
+### Lithium-ion
+
+| Battery | Cells | Min | Nominal | Max |
+|---|---|---|---|---|
+| 1S | 1 | 2.5 V | 3.7 V | 4.3 V |
+| 2S | 2 | 5.0 V | 7.4 V | 8.6 V |
+| 3S | 3 | 7.5 V | 11.1 V | 12.9 V |
+| 4S | 4 | 10.0 V | 14.8 V | 17.2 V |
+| 6S | 6 | 15.0 V | 22.2 V | 25.8 V |
+| 8S | 8 | 20.0 V | 29.6 V | 34.4 V |
+| 12S | 12 | 30.0 V | 44.4 V | 51.6 V |
+| 14S | 14 | 35.0 V | 51.8 V | 60.2 V |
+
+---
+
+### LiFePO4
+
+| Battery | Cells | Min | Nominal | Max |
+|---|---|---|---|---|
+| 1S | 1 | 2.5 V | 3.2 V | 3.8 V |
+| 2S | 2 | 5.0 V | 6.4 V | 7.6 V |
+| 3S | 3 | 7.5 V | 9.6 V | 11.4 V |
+| 4S | 4 | 10.0 V | 12.8 V | 15.2 V |
+| 6S | 6 | 15.0 V | 19.2 V | 22.8 V |
+| 8S | 8 | 20.0 V | 25.6 V | 30.4 V |
+| 12S | 12 | 30.0 V | 38.4 V | 45.6 V |
+| 14S | 14 | 35.0 V | 44.8 V | 53.2 V |
+
+---
+
+### Lead-acid / AGM / GEL
+
+| System | Min | Nominal | Max |
+|---|---|---|---|
+| 12V | 10.0 V | 12.6 V | 14.8 V |
+| 24V | 20.0 V | 25.2 V | 29.6 V |
+| 48V | 40.0 V | 50.4 V | 59.2 V |
+
+--- 
+
 ## Fault Mode Behaviour
 
 If the measured voltage falls outside the plausible range:
