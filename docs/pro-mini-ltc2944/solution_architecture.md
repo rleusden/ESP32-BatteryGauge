@@ -1,408 +1,457 @@
-# Pro Mini LTC2944 Bridge – Solution Architecture
+# BatteryGauge – Solution Architecture (v3)
 
 ## Overview
 
-The **Pro Mini LTC2944 bridge** is a dedicated battery measurement node used in the **ESP32 BatteryGauge system**.
+BatteryGauge is a modular battery monitoring system designed to provide reliable and user-friendly battery insight while remaining independent from vendor-specific cloud platforms.
 
-Its primary role is to convert raw measurements from the **LTC2944 battery monitor IC** into normalized battery telemetry that can be consumed by the **ESP32 BatteryGauge application**.
+The architecture separates **battery intelligence** from **user interface and connectivity**.  
+This allows the battery monitoring logic to remain deterministic, hardware-close, and reusable across different user interfaces.
 
-The bridge provides:
+The system consists of two main nodes:
 
-- battery voltage measurement  
-- battery current measurement  
-- battery temperature measurement  
-- battery state-of-charge estimation (SOC)  
-- battery profile awareness  
-- calibration capability  
-- safe-state handling  
+**Battery Intelligence Node**
 
-The Pro Mini communicates with the ESP32 using a simple **serial telemetry protocol**.
+Responsible for:
 
-The ESP32 is responsible for:
+- measurement acquisition
+- battery modelling
+- state-of-charge estimation
+- adaptive correction
+- battery learning algorithms
+- persistent battery knowledge
 
-- user interface
-- WiFi connectivity
+**User Interface Node ESP32**
+
+Responsible for:
+
+- dashboards
 - visualization
-- logging and analytics
+- configuration
+- networking
+- logging
 
-This architecture separates **low-level battery sensing** from **application and UI logic**.
+This separation keeps battery logic independent from UI technology and networking concerns.
 
 ---
 
 # System Context
 
-The system consists of three logical layers.
+BatteryGauge measures battery behaviour through a dedicated measurement chain.
 
 ```mermaid
 flowchart TD
-    B[Battery]
-    S[Shunt Resistor + LTC2944]
-    P[Arduino Pro Mini<br/>Battery Sensor + Validation Node]
-    E[ESP32 BatteryGauge<br/>UI and Connectivity Layer]
-    T[Tablet / Web UI]
 
-    B --> S
-    S -->|I²C| P
-    P -->|UART| E
-    E -->|WiFi| T
+subgraph Estimation_Pipeline["SOC Estimation Pipeline"]
+A[Measurement Subsystem]
+B[Signal Conversion]
+C[Coulomb SOC Estimation]
+D[Voltage SOC Estimation]
+E[SOC Compensation]
+F[Adaptive SOC Weighting]
+G[Final SOC]
+
+A --> B
+B --> C
+B --> D
+C --> E
+D --> E
+E --> F
+F --> G
+end
+
+subgraph Learning_System["Learning & Persistence"]
+L1[Capacity Learning]
+L2[Internal Resistance Learning]
+L3[Battery Health Estimation]
+L4[Persistence]
+end
+
+B --> L1
+B --> L2
+L1 --> L3
+L2 --> L3
+L3 --> L4
+
+G --> T[Telemetry Output]
+L3 --> T
 ```
-### Responsibilities per layer
+
+### Roles
 
 | Component | Responsibility |
-|-----------|---------------|
-| Battery | Energy storage |
-| Shunt + LTC2944 | Electrical measurement |
-| Pro Mini bridge | Measurement processing and calibration |
-| ESP32 BatteryGauge | UI, networking, visualization |
+|----------|----------------|
+Battery | Energy storage |
+Shunt | Current sensing |
+Measurement IC | Electrical measurement (voltage, current, charge) |
+Battery Intelligence Node | Battery modelling and estimation |
+User Interface Node | Visualization and user interaction |
 
 ---
 
-# Why this module exists
+# Architectural Principles
 
-The LTC2944 provides **raw electrical measurements**, but integrating the sensor directly into the application layer introduces several challenges:
+The architecture follows several design principles.
 
-- calibration logic becomes mixed with UI logic  
-- battery chemistry configuration must be handled somewhere  
-- error handling becomes complex  
-- sensor faults propagate into the UI layer  
+### Separation of concerns
 
-The Pro Mini bridge solves this by acting as a dedicated sensor node and hardware validation layer.
+Battery modelling and learning are isolated from the user interface.
 
-Benefits:
+### Deterministic measurement
 
-- separation of concerns
-- deterministic sensor behavior
-- simplified ESP32 firmware
-- improved robustness
-- easier testing and calibration
+Battery estimation occurs close to the sensor to avoid delays and noise from UI or networking tasks.
 
----
+### Adaptive battery modelling
 
-# Scope
+The system gradually learns real battery behaviour during normal operation.
 
-The Pro Mini firmware is responsible for:
+### Modular functional pipeline
 
-- configuring and reading the LTC2944
-- converting raw sensor values
-- determining battery profile characteristics
-- estimating SOC
-- performing calibration
-- detecting invalid hardware configuration
-- validating battery configuration and measured voltage plausibility
-- producing normalized telemetry for the ESP32
+Battery estimation is implemented as a pipeline of functional stages.
 
-The firmware is **not responsible for**:
+### Persistence of learned behaviour
 
-- UI rendering
-- network communication
-- data logging
-- historical analysis
+Battery characteristics are stored so the system improves over time.
 
-These responsibilities belong to the **ESP32 application layer**.
+### Robust operation
+
+Data corruption, sensor errors, and battery replacement events are handled gracefully.
 
 ---
 
-# Hardware Interfaces
+# Functional Architecture
 
-## LTC2944 Interface
+The system is composed of several logical subsystems.
 
-Communication with the LTC2944 occurs via **I²C**.
+<insert drawing>
 
-Signals:
 
-| Signal | Function |
-|------|------|
-| SDA | I²C data |
-| SCL | I²C clock |
+Each subsystem performs a clearly defined role.
 
-The LTC2944 provides the following measurements:
+---
+
+# Measurement Subsystem
+
+The measurement subsystem retrieves electrical properties from the battery through the measurement IC.
+
+Primary measurements include:
 
 - battery voltage
-- current through shunt resistor
-- internal temperature
-- accumulated charge register (ACR)
+- current through the shunt
+- temperature
+- accumulated charge
+
+These measurements form the raw input for the estimation pipeline.
 
 ---
 
-## Serial Interface
+# Signal Conversion
 
-The Pro Mini communicates with the ESP32 using **UART**.
+Raw sensor values must be translated into normalized electrical values.
 
-Default configuration:
+This stage performs:
 
-- 115200 baud
-- 8 data bits
-- no parity
-- 1 stop bit
+- voltage scaling
+- current conversion
+- charge register interpretation
+- plausibility validation
 
-Telemetry is transmitted once per second.
-
-Example frame:
-
-SOC=92,Vpack=4094,I=0,T=167,AL=0,CHG=0,CAL=0,CPH=0,CLOAD=0,BTYPE=0,BCLASS=0,BNAME=LIION_1S,ACR=32767,CRAWI=32768*XX
-
-
-The frame includes a **CRC-8 checksum** to detect transmission errors.
+The result is a consistent set of battery measurements used by the rest of the system.
 
 ---
 
-# Battery Profile Selection
+# State-of-Charge Estimation
 
-Battery configuration is determined using **hardware configuration pins**.
+BatteryGauge determines state of charge using two complementary methods.
 
-This design intentionally avoids runtime configuration menus to ensure:
+### Coulomb counting
 
-- predictable behavior
-- installation simplicity
-- configuration visibility on the PCB silkscreen
-- immunity to firmware configuration errors
+The primary SOC estimate tracks the amount of charge flowing into and out of the battery.
 
----
+Advantages:
 
-## Chemistry Selection
+- stable during load
+- accurate over short time scales
+- directly based on measured current
 
-Two input pins define battery chemistry.
+### Voltage based estimation
 
-| Code | Chemistry |
-|-----|-----------|
-| 00 | Li-ion |
-| 01 | LiFePO4 |
-| 10 | AGM |
-| 11 | GEL |
+A secondary SOC estimate is derived from the battery voltage curve.
 
----
+Advantages:
 
-## Battery Class Selection
+- stable during rest
+- useful to correct drift
+- provides a fallback estimate
 
-Four input pins define the battery voltage class.
-
-### Lithium batteries
-
-Lithium batteries are configured using the number of series cells (S).
-
-| Class | Battery |
-|------|--------|
-| 0000 | 1S |
-| 0001 | 2S |
-| 0010 | 3S |
-| 0011 | 4S |
-| 0100 | 6S |
-| 0101 | 8S |
-| 0110 | 12S |
-| 0111 | 14S |
+Both methods are combined later in the SOC pipeline.
 
 ---
 
-### Lead batteries
+# SOC Compensation
 
-Lead-acid batteries are configured based on the nominal system voltage.
+Measured battery voltage changes with load due to internal resistance.
+To compensate for this effect the system estimates the effective open-circuit voltage.
 
-| Class | Battery |
-|------|---------|
-| 0000 | 12V |
-| 0001 | 24V |
-| 0010 | 48V |
+V_ocv = V_measured + I × R_internal
 
----
 
-## Invalid Configuration
-
-If the combination of chemistry and class is unsupported:
-
-1. An error message is printed to the serial port.
-2. The status LED enters an **SOS blink pattern**.
-3. Normal telemetry output is disabled.
-
-This prevents the ESP32 application from receiving invalid measurement data.
+This allows the system to derive a more realistic voltage-based SOC estimate even when the battery is under load.
 
 ---
 
-## Voltage Plausibility Check
+# Adaptive SOC Weighting
 
-A valid hardware configuration does not guarantee that the correct battery is connected.
+The final SOC value is calculated by combining two independent SOC estimates:
 
-For example:
+- coulomb SOC
+- voltage SOC
 
-- a **1S battery connected while 3S Li-ion is configured**
-- a **severely discharged battery outside the plausible voltage range**
-- an incorrect installation
+The system dynamically adapts the influence of both sources.
 
-To detect this situation, the Pro Mini performs a **startup voltage plausibility check**.
+Typical behaviour:
 
-The measured pack voltage is compared against the expected voltage range of the selected battery profile.
+| Battery state | Dominant source |
+|---------------|----------------|
+Under load | Coulomb counting |
+Resting battery | Voltage curve |
 
-If the measured voltage falls outside the plausible range:
-
-1. A diagnostic message is printed to the serial port.
-2. The system enters **fault mode**.
-3. The LED indicates an error using the **SOS pattern**.
-
-**Normal telemetry output is disabled to prevent the ESP32 from processing invalid battery data.**
-
----
-## Override Mode
-
-A dedicated **override jumper** allows installers to bypass the startup voltage plausibility check.
-
-This is intended for edge cases such as:
-
-- aged batteries
-- weak batteries
-- laboratory testing
-- partially discharged packs during service
-
-When override is enabled:
-
-- the Pro Mini continues normal telemetry output
-- a **profile mismatch alarm bit** is set in telemetry
-- the ESP32 UI can inform the user that the measured battery does not match the configured profile
-
-**Override mode should only be used intentionally and is not recommended for normal operation.**
+This adaptive weighting stabilizes SOC behaviour in real-world usage.
 
 ---
 
-# Calibration Concept
+# Learning Subsystem
 
-The system supports a **hardware-triggered calibration mode**.
+A major capability introduced in v3 is the automatic learning of battery characteristics.
 
-Calibration is activated by pulling the **CAL_MODE pin** to ground.
+The system continuously improves its understanding of the connected battery.
 
-During calibration:
+This behaviour is inspired by advanced battery monitors commonly used in marine and energy storage systems.
 
-1. The system measures the zero-current offset.
-2. A controlled load is activated.
-3. The battery is discharged.
-4. Voltage and ACR measurements are observed.
+The learning subsystem derives:
 
-Calibration results are stored in **EEPROM**.
+- effective battery capacity
+- internal battery resistance
+- battery health
+- confidence in the learned model
 
----
-
-# Calibration Phases
-
-| Phase | Description |
-|------|-------------|
-| CAL_ZERO | Zero-current offset measurement |
-| CAL_WAIT | Stabilization delay |
-| CAL_DISCHARGE | Controlled discharge |
-| CAL_DONE | Calibration finished |
-| CAL_ABORT | Calibration aborted |
-
-Calibration progress is exposed via telemetry fields, allowing the ESP32 UI to visualize the process.
+Learning occurs during normal use and does not require dedicated calibration cycles.
 
 ---
 
-# LED Status Signaling
+# Capacity Learning
 
-Because the Pro Mini lacks a display, the onboard LED indicates the system state.
+Battery capacity changes over time due to aging and usage.
 
-| LED State | Meaning |
-|----------|---------|
-| OFF | Normal operation |
-| ON | Calibration active |
-| SOS blink | Configuration error or startup validation error |
+The system estimates effective capacity by observing real discharge behaviour.
 
-This provides immediate visual feedback to installers.
+When a meaningful discharge trajectory is observed, the system updates its capacity estimate using a smoothing function.
 
----
+This prevents abrupt changes while allowing the estimate to gradually converge to the real battery capacity.
 
-# Safety and Error Handling
-
-The bridge firmware implements several protective behaviors.
-
-### Unsupported configuration
-
-- serial error message
-- SOS LED indication
-- telemetry disabled
-
-### Sensor read failure
-
-If the LTC2944 read fails:
-
-- an alarm flag is set
-- a telemetry frame is still transmitted
-
-### Battery profile mismatch
-
-If the measured battery voltage does not match the configured battery profile:
-
-- a profile mismatch alarm flag is set
-- the condition is reported to the ESP32
-- the ESP32 UI can present a diagnostic warning to the user
-
-If override mode is disabled, the system enters fault mode during startup.
-
-### Measurement limits
-
-The system checks:
-
-- voltage thresholds
-- temperature limits
-- current limits
-
-Alarm flags are included in the telemetry.
+The learned capacity improves the accuracy of SOC estimation.
 
 ---
 
-# Design Choices and Trade-offs
+# Internal Resistance Learning
 
-## Hardware configuration vs software configuration
+Battery internal resistance affects voltage behaviour under load.
 
-Hardware configuration was chosen because:
+The system estimates internal resistance by observing voltage changes caused by current transitions.
 
-- installers can immediately see the configuration
-- configuration persists across firmware updates
-- configuration errors are detectable at boot
-- configuration cannot be accidentally changed in software
+R = ΔV / ΔI
 
----
 
-## Separation of sensing and UI
+The resulting resistance estimate is used to improve voltage compensation.
 
-Separating the **sensor node** from the **application layer** provides:
-
-- simpler firmware
-- deterministic sensor timing
-- reduced system coupling
-- easier hardware debugging
+Over time the system learns a realistic resistance value for the battery.
 
 ---
 
-## Limiting supported voltage ranges
+# Battery Health Estimation
 
-Although the LTC2944 supports up to **60V**, the system intentionally restricts supported configurations to practical battery classes.
+Battery health is derived from the relationship between learned capacity and nominal capacity.
 
-Reasons:
+health = learnedCapacity / nominalCapacity
 
-- improved safety margins
-- simpler configuration model
-- alignment with typical boat, camper, and off-grid battery systems
+
+This produces a simple classification of battery condition.
+
+Typical categories:
+
+| Ratio | Interpretation |
+|------|---------------|
+|> 80% | Healthy |
+|60–80% | Aging |
+|40–60% | Poor |
+|< 40% | Replacement recommended |
+
+This provides a simple user-level interpretation of battery aging.
 
 ---
 
-# Extension Points
+# Model Confidence
 
-Future improvements may include:
+The system tracks the reliability of the learned model.
 
-- coulomb-based SOC estimation
-- improved battery chemistry models
-- additional battery types
-- extended calibration procedures
-- calibration data logging
-- firmware self-test routines
+Confidence increases when:
+
+- more discharge data is observed
+- more current transitions are measured
+- estimates become stable
+
+Low confidence prevents early learning results from influencing SOC too strongly.
+
+---
+
+# Battery Swap Detection
+
+Learned battery behaviour is only valid for the battery that generated the learning data.
+
+The system therefore monitors for battery replacement events.
+
+Typical detection conditions include:
+
+- near-zero current
+- sudden voltage changes inconsistent with normal behaviour
+
+When a swap is detected the learned battery model is reset.
+
+This ensures that a newly installed battery starts with a clean baseline.
+
+---
+
+# Persistence Layer
+
+Learned battery characteristics are stored in non-volatile memory.
+
+Persisted information includes:
+
+- learned capacity
+- internal resistance
+- learning confidence
+- cycle counters
+- battery health classification
+
+The persistence design prioritizes robustness.
+
+Mechanisms include:
+
+- record validation
+- redundancy
+- versioning
+- data integrity checks
+
+This ensures learned data survives power loss while remaining resilient against corruption.
+
+---
+
+# Telemetry Layer
+
+The battery intelligence node produces normalized telemetry for the user interface node.
+
+Typical telemetry includes:
+
+- battery voltage
+- current
+- state of charge
+- learned capacity
+- internal resistance
+- battery health
+- model confidence
+
+The telemetry layer deliberately exposes **interpreted battery information**, not raw sensor registers.
+
+This simplifies the UI and avoids duplicating battery modelling logic.
+
+---
+
+# User Interface Node
+
+The user interface node is responsible for presenting battery information to the user.
+
+Responsibilities include:
+
+- dashboard visualization
+- configuration interfaces
+- logging
+- network access
+- browser access
+
+The UI node does not implement battery modelling.
+
+Instead it relies on telemetry produced by the battery intelligence node.
+
+This architectural separation keeps battery logic consistent and testable.
+
+---
+
+# Robustness and Safety
+
+The system contains several mechanisms to maintain safe operation.
+
+Examples include:
+
+- sensor read validation
+- measurement plausibility checks
+- corrupted data detection
+- battery swap recovery
+- fallback SOC behaviour
+
+These mechanisms ensure the monitor remains usable even when unexpected situations occur.
+
+---
+
+# Extensibility
+
+The architecture is designed to allow future improvements.
+
+Possible extensions include:
+
+- chemistry-specific learning behaviour
+- improved cycle detection
+- long-term degradation analytics
+- trend logging
+- expanded telemetry
+- additional UI visualizations
+
+The separation between battery intelligence and UI allows these improvements without redesigning the core architecture.
 
 ---
 
 # Summary
 
-The Pro Mini LTC2944 bridge functions as a dedicated battery sensor node in the BatteryGauge system.
+BatteryGauge v3 introduces a modular battery monitoring architecture that combines:
 
-It provides:
+- deterministic measurement
+- adaptive SOC estimation
+- internal resistance modelling
+- automatic battery learning
+- persistent battery knowledge
+- robust telemetry
 
-- reliable battery measurements
-- chemistry-aware SOC estimation
-- calibration capability
-- robust error handling
+The system evolves from a simple measurement bridge into a **self-learning battery intelligence platform**.
 
-By separating sensing from the application layer, the architecture remains **modular, maintainable, and robust**.
+Key architectural separation:
+
+**Battery Intelligence Node**
+
+- sensing
+- SOC estimation
+- adaptive correction
+- learning algorithms
+- battery health estimation
+- persistence
+
+**User Interface Node**
+
+- visualization
+- dashboards
+- configuration
+- networking
+- logging
+
+This architecture provides a stable foundation for future expansion while maintaining clear separation between **battery modelling** and **user interaction**.
+
+
+
+
